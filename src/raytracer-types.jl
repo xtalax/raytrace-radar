@@ -32,6 +32,7 @@ import Base./
 import Base.+
 import Base.-
 import Base.^
+import Base.isnan
 import LinearAlgebra.cross
 import LinearAlgebra.normalize
 import LinearAlgebra.⋅
@@ -50,7 +51,7 @@ import LinearAlgebra.norm
 Vector(p::Point) = [p.x,p.y,p.z]
 SVector(p::Point) = SVector(p.x,p.y,p.z)
 cross(p1::Point, p2::Point) = Point(p1.y*p2.z-p1.z*p2.y, -p1.x*p2.z+p1.z*p2.x, p1.x*p2.y-p1.y*p2.x)
-
+isnan(p::Point) = isnan(p.x) | isnan(p.y) | isnan(p.z)
 /(p::Point, n::Number) = Point(p.x/n, p.y/n, p.z/n)
 norm(p::Point) = sqrt(p.x^2+p.y^2+p.z^2)
 

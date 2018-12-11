@@ -24,7 +24,7 @@ end
 
 
 
-function load_ply_file(fileName::String)
+function load_ply_file(fileName::String, RefrIndex::Float64)
   println(" ~~~ loading surface mesh ~~~")
   nNodes = 0
   nTriangles = 0
@@ -79,7 +79,7 @@ function load_ply_file(fileName::String)
   println("tri indicies")
   println(triIndices)
   println(nTriangles)
-  surface = Surface(nodeCoords, triIndices, nTriangles)
+  surface = Surface(nodeCoords, triIndices, nTriangles, RefrIndex)
 
 
 
