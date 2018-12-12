@@ -160,12 +160,15 @@ function Detect!(detector::Detector, ray::Ray)
             push!(pixel.ϕp, ray.ϕp)
             push!(pixel.ϕp, ray.ϕs)
             push!(pixel.ϕs, ray.ϕp)
-            break
+
+            if draw
+                ### update animation ###
+            end
         end
     end
 end
 
-function Trace!!(detector, bundle, surface)
+function Trace!!(detector, bundle, surface, scene = NaN, draw = false)
     maxN = bundle.N
     while bundle.N > 0
 
@@ -178,7 +181,7 @@ function Trace!!(detector, bundle, surface)
         # ~~~ DETECTION LOGIC GOES HERE ~~~ #
         detection = polygonIntersect(ray, detector.shape)
         if detection.isHit & (interaction.isHit & (detection.distance < interaction.distance) | !interaction.isHit)
-             Detect!(detector, ray)
+             Detect!(detector, ray, draw)
              continue
          end
 
@@ -207,30 +210,30 @@ end
 end
 
 function freqsweepdistributed(detector::Detector,freqs::StepRangeLen{Float64,Base.TwicePrecision{Float64},Base.TwicePrecision{Float64}})
-    sPol = SharedArray(Complex.(zeros(length(freqs),1)))
-    pPol = SharedArray(Complex.(zeros(length(freqs),1)))
     pixel = detector.pixels[1]
     times = pixel.times
     ampS = pixel.ampS
     ampP = pixel.ampP
     ϕs = pixel.ϕs
     ϕp = pixel.ϕp
-    sendto(workers(), freqs=freqs)
-    sendto(workers(), times=times)
-    sendto(workers(), ampS=ampS)
-    sendto(workers(), ampP=ampP)
-    sendto(workers(), ϕs=ϕs)
-    sendto(workers(), ϕp=ϕp)
+    sPol = Complex.(zeros(length(freqs),1))
+    pPol = Complex.(zeros(length(freqs),1))
 
-    @async @distributed for k in 1:nprocs()-1
-         for j in getrange(1501)
-            φ = exp.(im.*times.*2π.*freqs[j]) # phase delay
-            sPol[j] = sum(ampS.*ϕs.*φ)
-            pPol[j] = sum(ampP.*ϕp.*φ)
-        end
+    #sendto(workers(), freqs=freqs)
+    #sendto(workers(), times=times)
+    #sendto(workers(), ampS=ampS)
+    #sendto(workers(), ampP=ampP)
+    #sendto(workers(), ϕs=ϕs)
+    #sendto(workers(), ϕp=ϕp)
+    #@everywhere @show times
+    ranges = getrange.(workers())
+    Pol = [[] for i in 1:length(freqs)]
+    Pol= @DArray [[sum(ampP.*ϕp.*exp.(im.*times.*2π.*f)),sum(ampS.*ϕs.*exp.(im.*times.*2π.*f))] for f in freqs]
+    mPol = hcat(Pol...)
 
-    end
-    return Array(sPol), Array(pPol)
+    println("a winner is you")
+
+    return mPol[2,:], mPol[1,:]
 end
 
 function freqsweepserial(detector::Detector, freqs::StepRangeLen{Float64,Base.TwicePrecision{Float64},Base.TwicePrecision{Float64}})

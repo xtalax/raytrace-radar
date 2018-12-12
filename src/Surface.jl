@@ -24,7 +24,7 @@ end
 
 
 
-function load_ply_file(fileName::String, RefrIndex::Float64)
+function load_ply_file(fileName::String)
   println(" ~~~ loading surface mesh ~~~")
   nNodes = 0
   nTriangles = 0
@@ -75,14 +75,9 @@ function load_ply_file(fileName::String, RefrIndex::Float64)
   end
   close(iFile)
   println("~~~ Done ~~~ \n\n~~~ Building Surface ~~~")
-  println(nodeCoords)
-  println("tri indicies")
-  println(triIndices)
-  println(nTriangles)
-  surface = Surface(nodeCoords, triIndices, nTriangles, RefrIndex)
 
 
 
-  totalSurfaceArea = sum([triangle.area for triangle in surface.Triangles])
-  return surface
+
+  return nodeCoords, triIndices, nTriangles
 end

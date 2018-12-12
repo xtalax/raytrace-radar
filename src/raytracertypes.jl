@@ -1,9 +1,12 @@
+#module RayTraceTypes
+#=
+export
+    Point, Node, Edge, Triangle, Surface, Parallelogram, Intersection, Beam, Source, Detector, Ray, Bundle, LinearAlgebra.⋅, Base.*, LinearAlgebra.×, Base.+, Base.-, LinearAlgebra.Vector,  Base.isnan, LinearAlgebra.normalize, LinearAlgebra.norm, unitize, LinearAlgebra.normalize, project, vectorAngle, Base.^, Pixel
+=#
 
-
-#=export
-Geometry, Shape, Polygon, Point, Node, Edge, Triangle, Surface, Parallelogram, Intersection, Beam, Source, Detector, Ray, Bundle,
-LinearAlgebra.⋅, Base.*, LinearAlgebra.×, Base.+, Base.-, LinearAlgebra.Vector,  Base.isnan, LinearAlgebra.normalize, LinearAlgebra.norm
-end=#
+using LinearAlgebra
+using Rotations
+using StaticArrays
 
 const c₀ = 299792458
 const ε₀ = (8.85418782*10^-12)
@@ -42,6 +45,7 @@ import LinearAlgebra.cross
 import LinearAlgebra.normalize
 import LinearAlgebra.⋅
 import LinearAlgebra.norm
+import Base.convert
 
 
 *(p::Point, n::Number) = Point(p.x*n, p.y*n, p.z*n)
@@ -221,59 +225,9 @@ mutable struct Surface <: Geometry
     end
 end
 
-mutable struct Pixel <:Geometry
-    shape::Parallelogram
-    TEBasis::Point
-    times::Vector{Float64}
-    ampS::Vector{Float64}
-    ampP::Vector{Float64}
-    ϕs::Vector{Complex}
-    ϕp::Vector{Complex}
-
-    function Pixel(origin::Point,x::Point,y::Point,TEBasis::Point)
-        shape = Parallelogram(origin,x,y)
-        times::Vector{Float64} = []
-        ampS::Vector{Complex} = []
-        ampP::Vector{Complex}= []
-        ϕs::Vector{Complex}= []
-        ϕp::Vector{Complex} =[]
-        return new(shape,TEBasis, times, ampS, ampP,ϕs, ϕp)
-    end
-end
 
 
-mutable struct Detector <:Geometry
-    pixels::Vector{Pixel}
-    shape::Polygon
-    function Detector(origin = Point(0.0,0.0,0.0)::Point, direction=Point([0.0,0.0,1.0])::Point, φ = 0.0, Nx=1::Int, Ny=1::Int, shape = "square"::String, X=1.0, Y=1.0)
 
-        Yvec = [0.0, Y, 0.0]
-        Xvec = [X, 0.0, 0.0]
-        TEvec =[0.0,1.0,0.0]
-
-        r_z=RotZ(φ) # rotates about the z axis by angle φ
-        q=rotation_between([0.0,0.0,1.0],Vector(normalize(direction))) #generates a quaternion matrix that rotates Point3Ds an angle and direction between the args about the origin
-        T = Matrix(q*r_z)
-
-        Ypoint = Point(T*Yvec)
-        Xpoint = Point(T*Xvec)
-        TEBasis = Point(T*TEvec)
-
-        y = Ypoint/Ny
-        x = Xpoint/Nx
-
-        shapeOrigin = origin-Ypoint/2-Xpoint/2
-        Origins=[shapeOrigin+x*nx+y*ny   for nx in 0:Nx-1, ny in 0:Ny-1]
-        N = Nx*Ny
-
-        Origins = reshape(Origins, (N, ))
-
-        pixels = Pixel.(Origins, (x for i in 1:N), (y for i in 1:N), (TEBasis for i in 1:N))
-        shape = Parallelogram(shapeOrigin, Xpoint, Ypoint)
-        new(pixels,shape)
-
-    end
-end
 struct Intersection
     point::Point # intersecting point
     distance::Float64 # intersecting distance
@@ -302,6 +256,61 @@ struct Ray <: Beam#The Rays object
 
      end
 
+end
+
+
+mutable struct Pixel <:Geometry
+    shape::Parallelogram
+    TEBasis::Point
+    times::Vector{Number}
+    ampS::Vector{Number}
+    ampP::Vector{Number}
+    ϕs::Vector{Number}
+    ϕp::Vector{Number}
+
+    function Pixel(origin::Point,x::Point,y::Point,TEBasis::Point)
+        shape = Parallelogram(origin,x,y)
+        times = []
+        ampS = []
+        ampP = []
+        ϕs = []
+        ϕp =[]
+        return new(shape,TEBasis, times, ampS, ampP,ϕs, ϕp)
+    end
+end
+
+mutable struct Detector <:Geometry
+    pixels::Vector{Pixel}
+    shape::Polygon
+    detectedrays::Vector{Ray}
+    function Detector(origin = Point(0.0,0.0,0.0)::Point, direction=Point([0.0,0.0,1.0])::Point, φ = 0.0, Nx=1::Int, Ny=1::Int, shape = "square"::String, X=1.0, Y=1.0)
+
+        Yvec = [0.0, Y, 0.0]
+        Xvec = [X, 0.0, 0.0]
+        TEvec =[0.0,1.0,0.0]
+
+        r_z=RotZ(φ) # rotates about the z axis by angle φ
+        q=rotation_between([0.0,0.0,1.0],Vector(normalize(direction))) #generates a quaternion matrix that rotates Point3Ds an angle and direction between the args about the origin
+        T = Matrix(q*r_z)
+
+        Ypoint = Point(T*Yvec)
+        Xpoint = Point(T*Xvec)
+        TEBasis = Point(T*TEvec)
+
+        y = Ypoint/Ny
+        x = Xpoint/Nx
+
+        shapeOrigin = origin-Ypoint/2-Xpoint/2
+        Origins=[shapeOrigin+x*nx+y*ny   for nx in 0:Nx-1, ny in 0:Ny-1]
+        N = Nx*Ny
+
+        Origins = reshape(Origins, (N, ))
+
+        pixels = Pixel.(Origins, (x for i in 1:N), (y for i in 1:N), (TEBasis for i in 1:N))
+        shape = Parallelogram(shapeOrigin, Xpoint, Ypoint)
+        new(pixels,shape,[])
+
+    end
 end
 
 struct Source <: Beam
@@ -346,3 +355,4 @@ mutable struct Bundle
 
     end
 end
+#end
