@@ -20,6 +20,7 @@ include("trace-refract.jl")
 # main start
 ################################################################################
 # load the ply file and build triangles.
+
 path = "/home/zander/github/Julia/raytrace-radar"
 fileName = path*"/src/cube.ply"
 objectName = match(r"\/\w+\.ply", fileName)
@@ -60,7 +61,7 @@ for t in 0:nTheta-1
     print("\nFreqency sweep completed!\n")
     @time  St,Pt = [ifft(Sf), ifft(Pf)]
     println("IFT completed!")
-    
+
     mcFreqData[:, t+1, 1] = Sf ; mcFreqData[:, t+1, 2] = Pf
     mcRangeData[:, t+1, 1] = St ; mcRangeData[:, t+1, 2] = Pt
 
